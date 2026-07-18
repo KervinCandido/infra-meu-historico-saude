@@ -1,0 +1,24 @@
+[ req ]
+default_bits        = 2048
+default_md          = sha256
+distinguished_name  = req_distinguished_name
+req_extensions      = v3_req
+prompt              = no
+
+[ req_distinguished_name ]
+countryName                 = BR
+stateOrProvinceName         = SP
+localityName                = Sao Paulo
+organizationName            = MeuHistoricoSaude
+commonName                  = keycloak-service
+
+[ v3_req ]
+subjectAltName = @alt_names
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = keycloak-app
+DNS.2 = keycloak-service
+DNS.3 = localhost

@@ -1,0 +1,43 @@
+_format_version: "3.0"
+
+services:
+  - name: service-keycloak
+    url: https://keycloak-service:8443
+    routes:
+      - name: rota-keycloak
+        paths: [/realms]
+        strip_path: false
+  - name: service-patient-document
+    url: https://patient-document-service:8443
+    routes:
+      - name: rota-patient-document
+        paths: [/patients, /documents]
+        strip_path: false
+
+#upstreams:
+#  - name: obras-service
+#    targets:
+#      - target: obras-service:8080
+#    healthchecks:
+#      active:
+#        http_path: /obra
+#        timeout: 10
+#        healthy:
+#          interval: 30
+#          successes: 10
+#        unhealthy:
+#          interval: 10
+#          http_failures: 2
+#  - name: capitulos-service
+#    targets:
+#      - target: capitulos-service:9000
+#    healthchecks:
+#      active:
+#        http_path: /capitulo
+#        timeout: 10
+#        healthy:
+#          interval: 30
+#          successes: 10
+#        unhealthy:
+#          interval: 10
+#          http_failures: 2

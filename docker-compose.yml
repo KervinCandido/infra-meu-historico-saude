@@ -1,0 +1,396 @@
+networks:
+  mongo-text-processo-network:
+    driver: bridge
+  postgres-patient-document-network:
+    driver: bridge
+  postgres-nextcloud-network:
+    driver: bridge
+  postgres-keycloak-network:
+    driver: bridge
+  nextcloud-network:
+    driver: bridge
+  keycloak-network:
+    driver: bridge
+  apache-kafka-network:
+    driver: bridge
+  kong-network:
+    driver: bridge
+volumes:
+  mongo-text-processor-data:
+  postgres-patient-document-data:
+  postgres-nextcloud-data:
+  postgres-keycloak-data:
+  nextcloud-data:
+services:
+  mongo-text-processor-service:
+    image: mongo:latest
+    container_name: mongo-text-processor
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+    networks:
+      - mongo-text-processo-network
+    volumes:
+      - mongo-text-processor-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits: 
+          memory: 256M
+  postgres-patient-document-service:
+    image: postgres:18
+    container_name: postgres-patient-document
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: ${POSTGRES_PD_DB}
+      POSTGRES_USER: ${POSTGRES_PD_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PD_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_PD_USER -d $$POSTGRES_PD_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres-patient-document-data:/var/lib/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - postgres-patient-document-network
+  postgres-nextcloud-service:
+    image: postgres:18
+    container_name: postgres-nextcloud
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: ${NEXTCLOUD_DB}
+      POSTGRES_USER: ${NEXTCLOUD_DB_USER}
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$NEXTCLOUD_DB_USER -d $$NEXTCLOUD_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres-nextcloud-data:/var/lib/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - postgres-nextcloud-network
+  postgres-keycloak-service:
+    image: postgres:18
+    container_name: postgres-keycloak
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$KEYCLOAK_DB_USER -d $$KEYCLOAK_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres-keycloak-data:/var/lib/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - postgres-keycloak-network
+  mongo-express:
+    image: mongo-express:latest
+    profiles:
+      - devtools
+    restart: always
+    container_name: mongo-express-text-processor
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo-text-processor-service
+      ME_CONFIG_MONGODB_URL: mongodb://mongo-text-processor-service:27017/?authSource=admin
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_DB_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_DB_PASSWORD}
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXP_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXP_PASSWORD}
+    depends_on:
+      mongo-text-processor-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8081/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - mongo-text-processo-network
+    deploy:
+      resources:
+        limits: 
+          memory: 128M
+  nextcloud-service:
+    image: nextcloud:apache
+    container_name: nextcloud
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_HOST: postgres-nextcloud-service
+      POSTGRES_DB: ${NEXTCLOUD_DB}
+      POSTGRES_USER: ${NEXTCLOUD_DB_USER}
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_PASSWORD}
+      NEXTCLOUD_INIT: 1
+      NEXTCLOUD_ENABLE_ENCRYPTION: "0"
+      NEXTCLOUD_ENCRYPTION_MODE: master
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost nextcloud-service nextcloud"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - nextcloud-data:/var/www/html
+    depends_on:
+      postgres-nextcloud-service:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - postgres-nextcloud-network
+      - nextcloud-network
+  keycloak-service:
+    image: quay.io/keycloak/keycloak:26.7.0
+    container_name: keycloak-service
+    restart: unless-stopped
+    command:
+      - start
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-keycloak-service
+      KC_DB_URL_DATABASE: ${KEYCLOAK_DB}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      AI_PROCESSING_CLIENT_SECRET: ${AI_PROCESSING_CLIENT_SECRET}
+      PATIENT_DOCUMENT_DEV_CLIENT_SECRET: ${PATIENT_DOCUMENT_DEV_CLIENT_SECRET}
+      # Força o Keycloak a aceitar requisições de qualquer interface interna (0.0.0.0)
+      KC_HTTP_HOST: 0.0.0.0
+      KC_HTTP_PORT: 8080
+      # Diz ao Keycloak qual URL os clientes externos vão digitar (via Kong)
+      KC_HOSTNAME: https://localhost:8443
+      KC_HEALTH_ENABLED: "true"
+      # Desativa o HTTP tradicional na porta 8080 (opcional, boa prática de segurança)
+      KC_HTTP_ENABLED: "false"
+      KC_PROXY_HEADERS: forwarded
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
+      KC_HTTPS_CLIENT_AUTH: required
+      KC_HTTPS_TRUST_STORE_FILE: /opt/keycloak/certs/ca-truststore.p12
+      KC_HTTPS_TRUST_STORE_PASSWORD: ${TRUST_STORE_PASSWORD}
+    volumes:
+      - ./docker/keycloak/meu-historico-saude-realm.json:/opt/keycloak/data/import/meu-historico-saude-realm.json:ro
+      - ./certs/keycloak:/opt/keycloak/certs:ro
+    # ports:
+    #   - "8081:8080"
+    depends_on:
+      postgres-keycloak-service:
+        condition: service_healthy
+    networks:
+      - postgres-keycloak-network
+      - keycloak-network
+      - kong-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+  apache-kafka-broker-service:
+    image: apache/kafka:4.3.1
+    container_name: apache-kafka-broker
+    #ports:
+    #  - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://apache-kafka-broker-service:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      # O utilitário kafka-broker-api-versions valida se a porta do Broker está aceitando conexões
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:9092 --version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - apache-kafka-network
+    deploy:
+      resources:
+        limits: 
+          memory: 512M
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    profiles:
+      - devtools
+    container_name: kafka-ui
+    restart: always
+    ports:
+      - "8181:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: apache-kafka-broker-service:29092
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - apache-kafka-network
+    depends_on:
+      apache-kafka-broker-service:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: 
+          memory: 256M
+  med-text-analytics-processor-service:
+    image: kervincandido/med-text-analytics-processor:latest
+    container_name: med-text-analytics-processor
+    restart: always
+    environment:
+      - MONGO_DB_URL=mongodb://mongo-text-processor-service:27017/?authSource=admin&uuidRepresentation=STANDARD
+      - MONGO_DB_USER=${MONGO_DB_USER}
+      - MONGO_DB_PASSWORD=${MONGO_DB_PASSWORD}
+      - MONGO_DB_DATABASE=${MONGO_DB_DATABASE}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL_CLASSIFIER=${GEMINI_MODEL_CLASSIFIER}
+      - GEMINI_MODEL_EXTRACTOR=${GEMINI_MODEL_EXTRACTOR}
+      - KAFKA_BOOTSTRAP_SERVERS=apache-kafka-broker-service:29092
+      - NEXTCLOUD_HOST=nextcloud-service
+      - NEXTCLOUD_USER=${NEXTCLOUD_USER}
+      - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD}
+    depends_on:
+      mongo-text-processor-service:
+        condition: service_healthy
+      nextcloud-service:
+        condition: service_healthy
+      apache-kafka-broker-service:
+        condition: service_healthy # service_started | service_healthy | service_completed_successfully 
+    networks:
+      - apache-kafka-network
+      - nextcloud-network
+      - mongo-text-processo-network
+      - kong-network
+    deploy:
+      resources:
+        limits: 
+          memory: 256M
+  patient-document-service:
+    image: kervincandido/patient-document-service:latest
+    container_name: patient-document-service
+    restart: always
+    environment:
+      - KAFKA_ENABLED=true
+      - DOCUMENT_FILE_BASE_URL=http://nextcloud-service/
+      - KAFKA_BOOTSTRAP_SERVERS=apache-kafka-broker-service:29092
+      - NEXTCLOUD_HOST=http://nextcloud-service/
+      - NEXTCLOUD_USER=${NEXTCLOUD_USER}
+      - NEXTCLOUD_PASSWORD=${NEXTCLOUD_PASSWORD}
+      - POSTGRES_HOST=postgres-patient-document-service
+      - POSTGRES_USER=${POSTGRES_PD_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PD_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_PD_DB}
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m -Djavax.net.ssl.trustStore=/app/certs/ca-truststore.p12 -Djavax.net.ssl.trustStorePassword=${TRUST_STORE_PASSWORD} -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.keyStore=/app/certs/patient-document.p12 -Djavax.net.ssl.keyStorePassword=${TRUST_STORE_PASSWORD} -Djavax.net.ssl.keyStoreType=PKCS12
+      - IAM_ISSUER_URI=https://localhost:8443/realms/meu-historico-saude
+      - IAM_JWK_SET_URI=https://keycloak-service:8443/realms/meu-historico-saude/protocol/openid-connect/certs
+      - IAM_AUDIENCE=patient-document-api
+      - SERVER_SSL_KEY_STORE=file:/app/certs/patient-document.p12
+      - SSL_PASSWORD=${TRUST_STORE_PASSWORD}
+      - SERVER_SSL_TRUST_STORE=file:/app/certs/ca-truststore.p12
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - ./certs/patient-document:/app/certs:ro
+    depends_on:
+      postgres-patient-document-service:
+        condition: service_healthy
+      nextcloud-service:
+        condition: service_healthy
+      apache-kafka-broker-service:
+        condition: service_healthy
+    networks:
+      - postgres-patient-document-network
+      - nextcloud-network
+      - apache-kafka-network
+      - keycloak-network
+      - kong-network
+    deploy:
+      resources:
+        limits: 
+          memory: 512M
+  kong-service:
+    image: kong:3.9.3-ubuntu
+    container_name: kong-gateway
+    volumes:
+      - ./kong:/usr/local/kong/declarative
+      - ./certs/kong:/etc/kong/certs
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      # HTTPS para CLIENTE FINAL
+      KONG_CLIENT_SSL_CERT: /etc/kong/certs/kong.crt
+      KONG_CLIENT_SSL_CERT_KEY: /etc/kong/certs/kong.key
+      # mTLS PARA UPSTREAM
+      KONG_NGINX_PROXY_PROXY_SSL_CERTIFICATE: /etc/kong/certs/kong.crt
+      KONG_NGINX_PROXY_PROXY_SSL_CERTIFICATE_KEY: /etc/kong/certs/kong.key
+  
+      # CERTIFICADO QUE O KONG APRESENTA PARA CLIENTES
+      KONG_SSL_CERT: /etc/kong/certs/kong.crt
+      KONG_SSL_CERT_KEY: /etc/kong/certs/kong.key
+
+      # Confiar na CA
+      KONG_LUA_SSL_TRUSTED_CERTIFICATE: /etc/kong/certs/ca.crt
+    ports:
+      - "8443:8443" # Proxy HTTPS (Onde o mTLS acontece)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - kong-network
+    restart: always
+    depends_on:
+      - patient-document-service
+      - keycloak-service

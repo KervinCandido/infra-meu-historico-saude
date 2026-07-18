@@ -1,0 +1,11 @@
+# env
+.env
+
+#
+*.p12
+*.crt
+*.csr
+*.srl
+*.key
+
+san_*.cnf
