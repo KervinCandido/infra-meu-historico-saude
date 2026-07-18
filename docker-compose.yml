@@ -211,8 +211,6 @@ services:
     volumes:
       - ./docker/keycloak/meu-historico-saude-realm.json:/opt/keycloak/data/import/meu-historico-saude-realm.json:ro
       - ./certs/keycloak:/opt/keycloak/certs:ro
-    # ports:
-    #   - "8081:8080"
     depends_on:
       postgres-keycloak-service:
         condition: service_healthy
