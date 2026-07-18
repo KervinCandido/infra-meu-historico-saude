@@ -9,13 +9,13 @@ O diagrama abaixo ilustra a arquitetura da solução e a comunicação entre os 
 ```mermaid
 flowchart TB
     %% Estilos e Definições de Cores
-    classDef client fill:#eceff1,stroke:#37474f,stroke-width:2px;
-    classDef gateway fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,stroke-dasharray: 5 5;
-    classDef service fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef database fill:#efebe9,stroke:#5d4037,stroke-width:2px;
-    classDef message fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef ext fill:#fce4ec,stroke:#c2185b,stroke-width:2px;
-    classDef dev fill:#f1f8e9,stroke:#689f38,stroke-width:2px;
+    classDef client fill:#eceff1,stroke:#37474f,stroke-width:2px,color:#000000;
+    classDef gateway fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,stroke-dasharray: 5 5,color:#000000;
+    classDef service fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000000;
+    classDef database fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000000;
+    classDef message fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000000;
+    classDef ext fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000000;
+    classDef dev fill:#f1f8e9,stroke:#689f38,stroke-width:2px,color:#000000;
 
     %% Nodes / Componentes
     Client["📱 Cliente / Consumidor<br>(HTTPS:8443)"]:::client
