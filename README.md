@@ -92,7 +92,7 @@ flowchart TB
 *   **MongoDB Text Processor (`mongo-text-processor`)**: Banco de dados NoSQL utilizado para armazenar os textos processados e as análises médicas estruturadas.
 
 ### 3. Armazenamento de Arquivos
-*   **Nextcloud (`nextcloud`)**: Solução de armazenamento em nuvem privada utilizada como repositório seguro para guardar os arquivos PDF e imagens dos exames/documentos médicos.
+*   **Nextcloud (`nextcloud`)**: Solução de armazenamento em nuvem privada utilizada como repositório seguro para guardar as imagens dos exames/documentos médicos.
 *   **Postgres Nextcloud (`postgres-nextcloud`)**: Banco de dados relacional dedicado às operações internas do Nextcloud.
 
 ### 4. Mensageria & Integração Event-Driven
