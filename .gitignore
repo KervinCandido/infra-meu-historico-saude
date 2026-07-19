@@ -1,11 +1,14 @@
-# env
+# Variáveis locais
 .env
 
-#
+# Certificados e chaves gerados localmente
 *.p12
 *.crt
 *.csr
 *.srl
 *.key
-
 san_*.cnf
+
+# IntelliJ IDEA
+.idea/
+*.iml

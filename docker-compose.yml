@@ -53,7 +53,7 @@ services:
       POSTGRES_USER: ${POSTGRES_PD_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PD_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_PD_USER -d $$POSTGRES_PD_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,7 +76,7 @@ services:
       POSTGRES_USER: ${NEXTCLOUD_DB_USER}
       POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$NEXTCLOUD_DB_USER -d $$NEXTCLOUD_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,7 +99,7 @@ services:
       POSTGRES_USER: ${KEYCLOAK_DB_USER}
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$KEYCLOAK_DB_USER -d $$KEYCLOAK_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -361,6 +361,10 @@ services:
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+
+      # Ambiente local: evita criar um worker por núcleo da máquina
+      KONG_NGINX_WORKER_PROCESSES: "1"
+
       KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout

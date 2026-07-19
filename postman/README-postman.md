@@ -1,41 +1,105 @@
 # Collection Postman — Meu Histórico Saúde
 
-Arquivos:
-- `meu-historico-saude.postman_collection.json`
-- `meu-historico-saude-local.postman_environment.json`
+Esta pasta contém os artefatos usados para validar o Patient Document Service por meio do Kong no ambiente Docker local.
+
+## Arquivos
+
+- `Meu Histórico Saúde - Patient Document Service.postman_collection.json`
+- `Meu Histórico Saúde - Local ou Kong.postman_environment.json`
+- `files/exame-laboratorial-ficticio.png`
+
+## Pré-requisitos
+
+1. Docker Desktop em execução.
+2. Stack iniciada:
+
+```powershell
+docker compose up -d
+docker compose ps
+```
+
+3. Serviços saudáveis.
+4. Postman Desktop instalado.
+
+## Certificado HTTPS local
+
+O Kong utiliza um certificado TLS autogerado no ambiente local.
+
+Para simplificar a execução da collection sem instalar manualmente a CA em
+cada máquina, desative no Postman:
+
+`Settings → General → SSL certificate verification`
+
+O Console do Postman poderá exibir:
+
+`Warning: Unable to verify the first certificate`
+
+Esse aviso é esperado no ambiente local e não impede a execução das
+requisições. Essa configuração não deve ser utilizada em ambientes de
+homologação ou produção.
 
 ## Importação
 
-1. No Postman, use **Import** e selecione os dois arquivos JSON.
-2. Selecione o environment **Meu Histórico Saúde - Local ou Kong**.
-3. Preencha localmente:
-   - `devClientSecret`
-   - `aiClientSecret` apenas quando for testar o cliente técnico da IA.
-4. Não envie ou versione novamente o environment depois de preencher secrets ou tokens.
+Importe os dois arquivos JSON desta pasta e selecione o environment:
 
-## Execução sugerida
+`Meu Histórico Saúde - Local ou Kong`
 
-1. `00 - Autenticação / Obter token - cliente de desenvolvimento`
-2. `02 - Pacientes / Cadastrar paciente`
-3. `03 - Documentos do paciente / Enviar documento`
-   - selecione manualmente um arquivo;
-4. execute as consultas dos documentos;
-5. obtenha o token da IA e execute a pasta `05 - Matriz de autorização`.
+O environment utiliza:
 
-`patientId`, `documentId`, `accessToken` e `aiAccessToken` são preenchidos automaticamente.
+```text
+baseUrl = https://localhost:8443
+realm = meu-historico-saude
+```
 
-## Testes pelo Kong
+O mesmo endereço público do Kong é usado para a API e para os endpoints OpenID Connect do Keycloak.
 
-A collection usa a variável `baseUrl`.
+## Secrets
 
-- acesso direto à API: `http://localhost:8080`
-- para o Kong: substitua `baseUrl` pela URL e pelo prefixo de rota configurados no gateway.
+Preencha localmente no environment:
 
-A URL do Keycloak permanece separada em `keycloakBaseUrl`. Caso o Keycloak também seja exposto pelo Kong, essa variável pode ser alterada independentemente.
+| Variável | Origem |
+|---|---|
+| `devClientSecret` | `PATIENT_DOCUMENT_DEV_CLIENT_SECRET` do arquivo `.env` |
+| `aiClientSecret` | `AI_PROCESSING_CLIENT_SECRET` do arquivo `.env` |
+
+Não salve nem versione esses valores.
+
+## Fluxo recomendado
+
+1. Obter token do cliente de desenvolvimento.
+2. Cadastrar paciente.
+3. Consultar o paciente criado.
+4. Enviar um documento PNG ou JPEG.
+5. Consultar o documento até `processingStatus` ser `PROCESSED`.
+6. Baixar o arquivo por `/documents/{documentId}/file`.
+7. Obter token do serviço de IA.
+8. Confirmar que o cliente de IA recebe `403` ao consultar pacientes.
+9. Confirmar que o cliente de IA recebe `200` ao baixar o arquivo.
+10. Validar `PATCH /documents/{documentId}/ai-result`.
+
+## Escopos
+
+O cliente de desenvolvimento deve receber:
+
+- `patients:read`
+- `patients:write`
+- `documents:read`
+- `documents:write`
+- `documents:file:read`
+- `documents:ai-result:write`
+
+O cliente `ai-processing-service` deve receber somente:
+
+- `documents:file:read`
+- `documents:ai-result:write`
 
 ## Observações
 
 - Não existe endpoint próprio de login no Patient Document Service.
-- Os tokens são obtidos diretamente no Keycloak pelo fluxo `client_credentials`.
-- O upload exige a seleção manual do arquivo no Postman.
-- Para baixar o arquivo, use **Send and Download**.
+- Os tokens são obtidos no Keycloak pelo fluxo `client_credentials`.
+- `accessToken`, `aiAccessToken`, `patientId` e `documentId` são preenchidos automaticamente pela collection.
+- `{{$timestamp}}` é uma variável dinâmica nativa do Postman.
+- O upload requer a seleção manual de um arquivo local no campo multipart `file`.
+- A rota de download é `/documents/{documentId}/file`.
+- Não utilize a rota antiga `/documents/{documentId}/download`.
+- Arquivos `.txt` ainda não são processados automaticamente pelo processador de IA atual.
