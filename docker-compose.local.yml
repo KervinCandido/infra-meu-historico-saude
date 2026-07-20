@@ -1,0 +1,7 @@
+services:
+  patient-document-service:
+    image: meu-historico-saude/patient-document-service:local
+    pull_policy: build
+    build:
+      context: ../patient-document-service
+      dockerfile: Dockerfile
