@@ -241,6 +241,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: '-Xms256m -Xmx512m'
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
@@ -255,7 +256,7 @@ services:
     deploy:
       resources:
         limits: 
-          memory: 512M
+          memory: 768M
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     profiles:
