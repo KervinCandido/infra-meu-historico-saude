@@ -16,6 +16,7 @@ networks:
   kong-network:
     driver: bridge
 volumes:
+  kafka-data:
   mongo-text-processor-data:
   postgres-patient-document-data:
   postgres-nextcloud-data:
@@ -239,6 +240,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
       # O utilitário kafka-broker-api-versions valida se a porta do Broker está aceitando conexões
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:9092 --version || exit 1"]
@@ -279,7 +283,7 @@ services:
         limits: 
           memory: 256M
   med-text-analytics-processor-service:
-    image: kervincandido/med-text-analytics-processor:latest
+    image: ${MED_TEXT_ANALYTICS_IMAGE:-kervincandido/med-text-analytics-processor:latest}
     container_name: med-text-analytics-processor
     restart: always
     environment:
@@ -311,7 +315,7 @@ services:
         limits: 
           memory: 256M
   patient-document-service:
-    image: kervincandido/patient-document-service:latest
+    image: ${PATIENT_DOCUMENT_IMAGE:-ghcr.io/alex-dev-br/patient-document-service:main}
     container_name: patient-document-service
     restart: always
     environment:

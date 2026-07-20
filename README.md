@@ -101,3 +101,7 @@ flowchart TB
 ### 5. Ferramentas de Desenvolvimento (Perfil `devtools`)
 *   **Kafka UI**: Interface gráfica rodando na porta `8181` para visualização e gerenciamento de tópicos, partições e mensagens do Kafka.
 *   **Mongo Express**: Interface administrativa baseada em web para gerenciar e visualizar os dados no MongoDB (porta `8081`).
+
+## Execução local
+
+Consulte [Desenvolvimento local](docs/local-development.md) para executar a infraestrutura com imagens publicadas ou com build do código local.
