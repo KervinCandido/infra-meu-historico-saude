@@ -5,3 +5,10 @@ services:
     build:
       context: ../patient-document-service
       dockerfile: Dockerfile
+
+  med-text-analytics-processor-service:
+    image: meu-historico-saude/med-text-analytics-processor:local
+    pull_policy: build
+    build:
+      context: ../med-text-analytics-processor
+      dockerfile: Dockerfile
