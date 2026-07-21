@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "eventType": "DOCUMENT_PROCESSED_RESPONSE",
+  "eventId": "a55c53fa-f3c4-4552-a98f-7d88d16f40e2",
+  "occurredAt": "2026-07-21T13:31:45.456Z",
+  "documentId": "60ebc948-f701-462f-bffd-9167eb77b193",
+  "patientId": "240e349a-e621-44d3-b569-870bf5825939",
+  "status": "PROCESSED",
+  "document": {
+    "id": "resultado-externo-1",
+    "patientId": "240e349a-e621-44d3-b569-870bf5825939",
+    "documentType": "EXAME_LABORATORIAL",
+    "documentDate": "2026-07-20",
+    "descricaoGeral": "Exame laboratorial processado com resultados simulados.",
+    "resultados": [
+      {
+        "nome": "Glicemia",
+        "valor": "92",
+        "unidade": "mg/dL"
+      }
+    ]
+  },
+  "error": null
+}
