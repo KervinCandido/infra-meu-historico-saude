@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:meu-historico-saude:messaging:v1:document-processing-requested",
+  "title": "Document Processing Requested",
+  "description": "Solicita o processamento assíncrono de um documento de saúde.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "eventType",
+    "eventId",
+    "occurredAt",
+    "documentId",
+    "patientId",
+    "fileUrl"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Versão do contrato da mensagem.",
+      "type": "integer",
+      "const": 1
+    },
+    "eventType": {
+      "description": "Tipo lógico do evento.",
+      "type": "string",
+      "const": "DOCUMENT_PROCESSING_REQUESTED"
+    },
+    "eventId": {
+      "description": "Identificador único da solicitação e correlação das respostas.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurredAt": {
+      "description": "Momento em que o evento foi produzido, em UTC.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "documentId": {
+      "description": "Identificador do documento original.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "patientId": {
+      "description": "Identificador do paciente proprietário do documento.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "fileUrl": {
+      "description": "URL interna utilizada pelo processador para obter o arquivo.",
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}
+

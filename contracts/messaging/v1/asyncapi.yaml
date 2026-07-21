@@ -1,0 +1,127 @@
+asyncapi: 3.1.0
+
+id: urn:meu-historico-saude:messaging:v1
+
+info:
+  title: Meu Histórico Saúde - Contrato de Mensageria
+  version: 1.0.0
+  description: |
+    Contrato versionado das mensagens Kafka trocadas entre o
+    Patient Document Service e o Med Text Analytics Processor.
+
+    O eventId identifica a solicitação original e correlaciona
+    todas as respostas geradas pelo seu processamento.
+
+defaultContentType: application/json
+
+servers:
+  localKafka:
+    host: apache-kafka-broker-service:29092
+    protocol: kafka
+    description: Broker Kafka interno do ambiente Docker local.
+
+channels:
+  documentProcessingRequested:
+    address: document-processing-requested
+    title: Solicitações de processamento
+    description: |
+      Recebe solicitações para processamento assíncrono de
+      documentos de saúde.
+    servers:
+      - $ref: '#/servers/localKafka'
+    messages:
+      documentProcessingRequestedV1:
+        $ref: '#/components/messages/documentProcessingRequestedV1'
+    x-producer: patient-document-service
+    x-consumer: med-text-analytics-processor
+
+  documentProcessedResponse:
+    address: document-processed-response
+    title: Resultados de processamento
+    description: |
+      Recebe resultados terminais de sucesso ou falha produzidos
+      pelo processador de documentos.
+    servers:
+      - $ref: '#/servers/localKafka'
+    messages:
+      documentProcessedResponseV1:
+        $ref: '#/components/messages/documentProcessedResponseV1'
+    x-producer: med-text-analytics-processor
+    x-consumer: patient-document-service
+
+operations:
+  publishDocumentProcessingRequested:
+    action: send
+    channel:
+      $ref: '#/channels/documentProcessingRequested'
+    summary: Publica uma solicitação de processamento.
+    messages:
+      - $ref: '#/channels/documentProcessingRequested/messages/documentProcessingRequestedV1'
+    x-application: patient-document-service
+
+  consumeDocumentProcessingRequested:
+    action: receive
+    channel:
+      $ref: '#/channels/documentProcessingRequested'
+    summary: Consome uma solicitação de processamento.
+    messages:
+      - $ref: '#/channels/documentProcessingRequested/messages/documentProcessingRequestedV1'
+    x-application: med-text-analytics-processor
+
+  publishDocumentProcessedResponse:
+    action: send
+    channel:
+      $ref: '#/channels/documentProcessedResponse'
+    summary: Publica o resultado terminal do processamento.
+    messages:
+      - $ref: '#/channels/documentProcessedResponse/messages/documentProcessedResponseV1'
+    x-application: med-text-analytics-processor
+
+  consumeDocumentProcessedResponse:
+    action: receive
+    channel:
+      $ref: '#/channels/documentProcessedResponse'
+    summary: Consome o resultado terminal do processamento.
+    messages:
+      - $ref: '#/channels/documentProcessedResponse/messages/documentProcessedResponseV1'
+    x-application: patient-document-service
+
+components:
+  messages:
+    documentProcessingRequestedV1:
+      name: DocumentProcessingRequestedV1
+      title: Document Processing Requested
+      summary: Solicita o processamento de um documento de saúde.
+      contentType: application/json
+      correlationId:
+        description: |
+          Identificador da solicitação original e das respostas
+          produzidas durante o processamento.
+        location: '$message.payload#/eventId'
+      payload:
+        schemaFormat: 'application/schema+json;version=draft-07'
+        schema:
+          $ref: './schemas/document-processing-requested.schema.json'
+      tags:
+        - name: processing
+        - name: request
+      x-example-file: './examples/document-processing-requested.json'
+
+    documentProcessedResponseV1:
+      name: DocumentProcessedResponseV1
+      title: Document Processed Response
+      summary: Comunica sucesso ou falha no processamento.
+      contentType: application/json
+      correlationId:
+        description: |
+          Identificador da solicitação que originou esta resposta.
+        location: '$message.payload#/eventId'
+      payload:
+        schemaFormat: 'application/schema+json;version=draft-07'
+        schema:
+          $ref: './schemas/document-processed-response.schema.json'
+      tags:
+        - name: processing
+        - name: response
+      x-success-example-file: './examples/document-processed-success.json'
+      x-failure-example-file: './examples/document-processed-failure.json'

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "eventType": "DOCUMENT_PROCESSED_RESPONSE",
+  "eventId": "a55c53fa-f3c4-4552-a98f-7d88d16f40e2",
+  "occurredAt": "2026-07-21T13:31:45.456Z",
+  "documentId": "60ebc948-f701-462f-bffd-9167eb77b193",
+  "patientId": "240e349a-e621-44d3-b569-870bf5825939",
+  "status": "FAILED",
+  "document": null,
+  "error": {
+    "code": "AI_QUOTA_EXCEEDED",
+    "message": "A cota do serviço de inteligência artificial foi excedida.",
+    "retryable": false
+  },
+  "errorDetail": "AI_QUOTA_EXCEEDED: A cota do serviço de inteligência artificial foi excedida."
+}
