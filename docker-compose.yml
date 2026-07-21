@@ -330,7 +330,7 @@ services:
       - POSTGRES_USER=${POSTGRES_PD_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PD_PASSWORD}
       - POSTGRES_DB=${POSTGRES_PD_DB}
-      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m -Djavax.net.ssl.trustStore=/app/certs/ca-truststore.p12 -Djavax.net.ssl.trustStorePassword=${TRUST_STORE_PASSWORD} -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.keyStore=/app/certs/patient-document.p12 -Djavax.net.ssl.keyStorePassword=${TRUST_STORE_PASSWORD} -Djavax.net.ssl.keyStoreType=PKCS12
+      - JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m
       - IAM_ISSUER_URI=https://localhost:8443/realms/meu-historico-saude
       - IAM_JWK_SET_URI=https://keycloak-service:8443/realms/meu-historico-saude/protocol/openid-connect/certs
       - IAM_AUDIENCE=patient-document-api
