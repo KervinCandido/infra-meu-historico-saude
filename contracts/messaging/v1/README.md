@@ -1,17 +1,51 @@
 # Contrato de mensageria v1
 
-Este diretório contém o contrato versionado das mensagens Kafka
-trocadas entre:
+Este diretório contém a baseline do contrato Kafka entre:
 
 - Patient Document Service;
 - Med Text Analytics Processor.
+
+O ambiente atual utiliza somente dados de teste. Por isso, esta versão
+substitui integralmente o modelo anterior e não oferece compatibilidade
+com mensagens legadas.
+
+## Fluxo
+
+```text
+Patient Document Service
+        |
+        | DOCUMENT_PROCESSING_REQUESTED
+        v
+Med Text Analytics Processor
+        |
+        | DOCUMENT_PROCESSING_COMPLETED
+        | ou
+        | DOCUMENT_PROCESSING_FAILED
+        v
+Patient Document Service
+```
+
+Cada solicitação produz exatamente uma resposta terminal.
+
+Uma resposta de conclusão contém todos os resultados clínicos extraídos
+do documento original.
 
 ## Tópicos
 
 | Tópico | Produtor | Consumidor |
 |---|---|---|
 | `document-processing-requested` | Patient Document Service | Med Text Analytics Processor |
-| `document-processed-response` | Med Text Analytics Processor | Patient Document Service |
+| `document-processing-result` | Med Text Analytics Processor | Patient Document Service |
+
+Tópicos operacionais de DLQ:
+
+```text
+document-processing-requested-dlq
+document-processing-result-dlq
+```
+
+As mensagens das DLQs preservam o payload original. A causa da falha
+deve ser registrada em logs, métricas e cabeçalhos Kafka apropriados.
 
 ## Estrutura
 
@@ -21,79 +55,62 @@ v1/
 ├── README.md
 ├── examples/
 │   ├── document-processing-requested.json
-│   ├── document-processed-success.json
-│   └── document-processed-failure.json
+│   ├── document-processing-completed.json
+│   └── document-processing-failed.json
 ├── schemas/
 │   ├── document-processing-requested.schema.json
-│   └── document-processed-response.schema.json
+│   └── document-processing-result.schema.json
 └── validate-examples.py
 ```
 
-## Identificação e correlação
+## Identificadores
 
-O campo `eventId` identifica a solicitação de processamento original.
+### `eventId` da solicitação
 
-As respostas reutilizam o mesmo `eventId`, permitindo correlacionar
-um ou mais resultados com a solicitação que os originou.
+Identifica unicamente a mensagem `DOCUMENT_PROCESSING_REQUESTED`.
 
-O campo `documentId` identifica o documento de saúde original.
+Também é utilizado pelo inbox do Processor para impedir o processamento
+duplicado da mesma solicitação.
 
-Cada resultado extraído pelo processador possui seu próprio
-`document.id`.
+### `eventId` da resposta
 
-## Versão do contrato
+Identifica unicamente a resposta terminal publicada pelo Processor.
 
-Todas as mensagens desta versão devem possuir:
+Esse identificador deve ser criado e persistido no outbox antes da
+publicação Kafka.
 
-```json
-{
-  "schemaVersion": 1
-}
-```
+Retries da mesma resposta devem reutilizar o mesmo `eventId`.
 
-Mudanças compatíveis podem ser adicionadas à versão 1 quando forem
-opcionais e não alterarem a semântica de campos existentes.
+### `correlationId`
 
-Mudanças incompatíveis exigem uma nova versão do contrato, por exemplo:
+Existe na resposta terminal e contém o `eventId` da solicitação original.
 
 ```text
-contracts/messaging/v2/
+solicitação -> processamento -> resposta
 ```
 
-São consideradas incompatíveis alterações como:
+### `documentId`
 
-- remover um campo;
-- alterar o tipo de um campo;
-- tornar obrigatório um campo anteriormente opcional;
-- mudar a semântica de um campo;
-- remover um valor aceito de uma enumeração.
+Identifica o arquivo original armazenado pelo Patient Document Service.
 
-## Tipos de evento
+É também a chave Kafka recomendada para preservar a ordem relativa das
+mensagens relacionadas ao documento.
 
-O contrato v1 define os seguintes tipos:
+### `resultId`
+
+Identifica unicamente cada resultado clínico presente no array `results`.
+
+Exemplos:
 
 ```text
-DOCUMENT_PROCESSING_REQUESTED
-DOCUMENT_PROCESSED_RESPONSE
+EXAME_HEMOGRAMA
+EXAME_LIPIDOGRAMA
+EXAME_GLICEMIA_JEJUM
 ```
 
-O campo `eventType` permite identificar o tipo lógico da mensagem,
-independentemente do nome do tópico Kafka.
+## Solicitação
 
-## Datas e horários
-
-Campos de eventos devem utilizar UTC no formato ISO-8601, por exemplo:
-
-```text
-2026-07-21T13:30:15.123Z
-```
-
-Nas aplicações Java, o tipo recomendado para esses campos é `Instant`.
-
-## Solicitação de processamento
-
-A mensagem publicada no tópico `document-processing-requested` deve
-possuir:
+O evento `DOCUMENT_PROCESSING_REQUESTED` possui:
 
 - `schemaVersion`;
 - `eventType`;
@@ -101,39 +118,67 @@ possuir:
 - `occurredAt`;
 - `documentId`;
 - `patientId`;
-- `fileUrl`.
+- `fileUrl`;
+- `contentType`.
 
-A URL do arquivo deve ser interna e acessível somente pelo serviço de
-processamento autorizado.
+A `fileUrl` deve:
 
-Ela não deve conter credenciais, tokens ou outros segredos.
+- ser interna;
+- ser acessível apenas pelo Processor autorizado;
+- não conter senha, token ou credencial;
+- não persistir uma URL assinada no evento.
 
-## Respostas de sucesso
+## Resposta de conclusão
 
-Uma resposta com status `PROCESSED` deve possuir:
+O evento `DOCUMENT_PROCESSING_COMPLETED` possui:
 
-- `document` preenchido;
-- `error` igual a `null`.
+- `schemaVersion`;
+- `eventType`;
+- `eventId`;
+- `correlationId`;
+- `occurredAt`;
+- `documentId`;
+- `patientId`;
+- `summary`;
+- `primaryDocumentType`;
+- `specialty`;
+- `documentDate`;
+- `confidence`;
+- `results`.
 
-Uma única solicitação pode gerar mais de um resultado de sucesso.
-
-A idempotência deve considerar a combinação:
+A resposta é agregada:
 
 ```text
-eventId + document.id
+1 solicitação
+1 resposta terminal
+N resultados clínicos
 ```
 
-O campo `document.id` identifica o resultado externo produzido pelo
-processador e não substitui o `documentId` do documento original.
+O array `results` deve conter pelo menos um item.
 
-## Respostas de falha
+Cada item possui:
 
-Uma resposta com status `FAILED` deve possuir:
+- `resultId`;
+- `documentType`;
+- `documentDate`;
+- `data`.
 
-- `document` igual a `null`;
-- `error` estruturado.
+O campo `data` preserva os atributos específicos de cada resultado.
 
-O objeto de erro contém:
+## Resposta de falha
+
+O evento `DOCUMENT_PROCESSING_FAILED` possui:
+
+- `schemaVersion`;
+- `eventType`;
+- `eventId`;
+- `correlationId`;
+- `occurredAt`;
+- `documentId`;
+- `patientId`;
+- `error`.
+
+O objeto `error` possui:
 
 | Campo | Descrição |
 |---|---|
@@ -141,168 +186,121 @@ O objeto de erro contém:
 | `message` | Mensagem segura e legível |
 | `retryable` | Indica se uma nova tentativa pode resolver a falha |
 
-Exemplo:
+Uma mensagem de falha não contém:
 
-```json
-{
-  "code": "AI_QUOTA_EXCEEDED",
-  "message": "A cota do serviço de inteligência artificial foi excedida.",
-  "retryable": false
-}
-```
+- `results`;
+- `summary`;
+- `primaryDocumentType`;
+- `specialty`;
+- `documentDate`;
+- `confidence`.
 
-O campo legado `errorDetail` será mantido temporariamente durante a
-migração dos serviços.
+Erros não devem expor:
 
-As mensagens de erro não devem conter:
-
-- segredos;
-- tokens;
 - credenciais;
+- tokens;
+- chaves;
 - stack traces;
 - URLs assinadas;
 - detalhes internos desnecessários.
 
-## Status permitidos
+## Datas e horários
 
-O contrato de resposta aceita apenas estados terminais:
+Campos de evento utilizam UTC no formato ISO-8601:
 
 ```text
-PROCESSED
-FAILED
+2026-07-22T05:05:49.136Z
 ```
 
-Estados internos como `PENDING`, `PROCESSING` ou `ALL_RETRY_FAILED`
-não devem ser publicados como status do contrato externo.
+Nas aplicações Java, o tipo recomendado é `Instant`.
 
-Esses estados podem continuar existindo internamente nos serviços.
+Datas clínicas sem horário utilizam:
 
-## Compatibilidade durante a migração
-
-A implantação deve ocorrer nesta ordem:
-
-1. atualizar consumidores para aceitar mensagens legadas e v1;
-2. implantar os consumidores tolerantes;
-3. atualizar produtores para publicar mensagens v1;
-4. validar os fluxos de sucesso, falha, repetição e DLQ;
-5. remover compatibilidade legada somente em uma versão futura.
-
-Durante o período de transição, os consumidores devem aceitar a ausência
-dos novos campos em mensagens legadas.
-
-Depois que todos os produtores estiverem publicando mensagens v1, os
-novos campos deverão ser obrigatórios nas validações do contrato.
-
-## Tratamento de falhas do consumidor
-
-O consumidor não deve apenas registrar e ignorar exceções.
-
-Quando uma mensagem não puder ser persistida ou processada, a exceção
-deve ser propagada para permitir que o mecanismo Kafka execute:
-
-- nova tentativa;
-- política de backoff;
-- envio para DLQ;
-- registro observável da falha.
-
-Isso evita que mensagens sejam confirmadas como consumidas antes de
-serem efetivamente registradas no inbox.
+```text
+YYYY-MM-DD
+```
 
 ## Idempotência
 
-Os consumidores devem ser preparados para receber mensagens repetidas.
-
-Para solicitações, o `eventId` identifica o evento original e deve ser
-único no inbox do processador.
-
-Para respostas bem-sucedidas, a identificação recomendada é:
+O inbox do Processor deve possuir unicidade por:
 
 ```text
-eventId + document.id
+request.eventId
 ```
 
-Para respostas de falha, deve existir somente uma falha terminal por
-`eventId`, salvo quando a política futura definir tentativas distintas.
-
-## Chave da mensagem Kafka
-
-A chave Kafka recomendada para os dois tópicos é o `documentId`.
-
-Isso mantém mensagens relacionadas ao mesmo documento na mesma
-partição, preservando a ordem relativa dos eventos desse documento.
-
-O `eventId` permanece como identificador de correlação no payload.
-
-## `batchId`
-
-O contrato v1 não possui `batchId`.
-
-Atualmente, uma solicitação representa o processamento de um documento.
-O `eventId` já correlaciona todos os resultados produzidos.
-
-Um `batchId` poderá ser introduzido quando houver processamento explícito
-de múltiplos documentos em uma única operação.
-
-## Arquivos de contrato
-
-### AsyncAPI
-
-O arquivo `asyncapi.yaml` descreve:
-
-- servidores Kafka;
-- canais;
-- tópicos;
-- produtores;
-- consumidores;
-- operações;
-- mensagens;
-- correlação;
-- referências aos JSON Schemas.
-
-### JSON Schemas
-
-Os arquivos em `schemas/` definem as regras estruturais das mensagens:
+O inbox do Patient deve possuir unicidade por:
 
 ```text
-document-processing-requested.schema.json
-document-processed-response.schema.json
+response.eventId
 ```
 
-Os schemas utilizam JSON Schema Draft 07.
-
-### Exemplos
-
-Os arquivos em `examples/` representam:
-
-- uma solicitação;
-- uma resposta bem-sucedida;
-- uma resposta de falha.
-
-Os exemplos usam os mesmos `eventId`, `documentId` e `patientId` para
-demonstrar a correlação do fluxo.
-
-## Validação do AsyncAPI
-
-Execute na raiz do repositório:
-
-```powershell
-$repoPath = (Get-Location).Path
-
-docker run `
-    --rm `
-    --user root `
-    --mount "type=bind,source=$repoPath,target=/workspace" `
-    --workdir /workspace `
-    asyncapi/cli `
-    validate `
-    /workspace/contracts/messaging/v1/asyncapi.yaml `
-    --log-diagnostics
-```
-
-O resultado esperado é:
+Também deve existir unicidade por:
 
 ```text
-File asyncapi.yaml is valid!
+response.correlationId
+```
+
+Isso garante uma única resposta terminal por solicitação.
+
+Os resultados persistidos devem possuir unicidade por:
+
+```text
+resultId
+```
+
+Uma reentrega Kafka da resposta completa não pode recriar o evento nem
+os resultados.
+
+## Outbox do Processor
+
+O outbox deve persistir antes da publicação:
+
+- `eventId` da resposta;
+- `correlationId`;
+- `occurredAt`;
+- `documentId`;
+- `patientId`;
+- IDs dos resultados;
+- resumo consolidado;
+- estado de publicação.
+
+O outbox somente pode ser marcado como publicado depois da confirmação
+do Kafka.
+
+Uma nova tentativa reutiliza o mesmo payload lógico, inclusive
+`eventId` e `occurredAt`.
+
+## Persistência no Patient
+
+O consumo da resposta deve ser transacional:
+
+1. validar o contrato;
+2. validar o `correlationId` contra a solicitação original;
+3. registrar o evento no inbox;
+4. persistir todos os resultados;
+5. atualizar a projeção de `health_documents`;
+6. marcar o documento como `PROCESSED` ou `FAILED`;
+7. confirmar o consumo Kafka somente depois do commit.
+
+O documento principal deve ser atualizado a partir dos campos
+consolidados da resposta, e não do primeiro item de `results`.
+
+## Estados
+
+A mensageria publica somente eventos terminais:
+
+```text
+DOCUMENT_PROCESSING_COMPLETED
+DOCUMENT_PROCESSING_FAILED
+```
+
+Estados internos podem continuar existindo:
+
+```text
+PENDING_PROCESSING
+PROCESSING
+PROCESSED
+FAILED
 ```
 
 ## Validação dos exemplos
@@ -322,24 +320,44 @@ docker run `
     "pip install --quiet 'jsonschema[format]>=4,<5' && python /workspace/contracts/messaging/v1/validate-examples.py"
 ```
 
-O resultado esperado é:
+Resultado esperado:
 
 ```text
 VALID: examples/document-processing-requested.json
-VALID: examples/document-processed-success.json
-VALID: examples/document-processed-failure.json
-OK: todos os exemplos respeitam os respectivos contratos.
+VALID: examples/document-processing-completed.json
+VALID: examples/document-processing-failed.json
+OK: todos os exemplos respeitam os contratos.
 ```
 
-## Evolução futura
+## Validação do AsyncAPI
 
-Possíveis evoluções do contrato incluem:
+Execute na raiz do repositório:
 
-- identificação explícita de cada resposta;
-- suporte a processamento em lote;
-- cabeçalhos padronizados de rastreamento;
-- Schema Registry;
-- geração automática de DTOs;
-- validação de contrato no CI;
-- publicação de documentação HTML do AsyncAPI;
-- remoção definitiva do campo legado `errorDetail`.
+```powershell
+$repoPath = (Get-Location).Path
+
+docker run `
+    --rm `
+    --user root `
+    --mount "type=bind,source=$repoPath,target=/workspace" `
+    --workdir /workspace `
+    asyncapi/cli `
+    validate `
+    /workspace/contracts/messaging/v1/asyncapi.yaml `
+    --log-diagnostics
+```
+
+Resultado esperado:
+
+```text
+File asyncapi.yaml is valid!
+```
+
+## Próximas implementações
+
+1. atualizar o Processor para publicar uma resposta agregada;
+2. atualizar o Patient para consumir a nova resposta;
+3. recriar as estruturas de inbox, outbox e resultados;
+4. substituir o tópico de resposta antigo;
+5. executar o E2E;
+6. validar reentrega e idempotência.

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventType": "DOCUMENT_PROCESSING_FAILED",
+  "eventId": "9c00875b-f271-4192-8cb8-a948c935a72a",
+  "correlationId": "8a73478e-af3c-451b-8107-601d7711a2d2",
+  "occurredAt": "2026-07-22T05:05:49.136Z",
+  "documentId": "a684eaab-abd3-42be-86cc-049792002577",
+  "patientId": "3d8d2a04-092b-455a-b824-bd2b5b968748",
+  "error": {
+    "code": "AI_QUOTA_EXCEEDED",
+    "message": "O limite de uso do serviço de inteligência artificial foi excedido.",
+    "retryable": false
+  }
+}

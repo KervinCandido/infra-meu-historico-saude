@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "eventType": "DOCUMENT_PROCESSING_COMPLETED",
+  "eventId": "740381a1-ef9d-47b0-aa6b-947a2124a0cc",
+  "correlationId": "8a73478e-af3c-451b-8107-601d7711a2d2",
+  "occurredAt": "2026-07-22T05:05:49.136Z",
+  "documentId": "a684eaab-abd3-42be-86cc-049792002577",
+  "patientId": "3d8d2a04-092b-455a-b824-bd2b5b968748",
+  "summary": "Exame laboratorial contendo hemograma, lipidograma e glicemia.",
+  "primaryDocumentType": "EXAME_LABORATORIAL",
+  "specialty": "CLINICA_MEDICA",
+  "documentDate": "2026-06-10",
+  "confidence": null,
+  "results": [
+    {
+      "resultId": "6a604fa78566039eb071acc1",
+      "documentType": "EXAME_HEMOGRAMA",
+      "documentDate": "2026-06-10",
+      "data": {
+        "hemoglobina": 14.2,
+        "leucocitosTotais": 7200
+      }
+    },
+    {
+      "resultId": "6a604fa98566039eb071acc2",
+      "documentType": "EXAME_LIPIDOGRAMA",
+      "documentDate": "2026-06-10",
+      "data": {
+        "colesterolTotal": 178,
+        "triglicerideos": 110
+      }
+    },
+    {
+      "resultId": "6a604fad8566039eb071acc3",
+      "documentType": "EXAME_GLICEMIA_JEJUM",
+      "documentDate": "2026-06-10",
+      "data": {
+        "glicose": 92,
+        "valoresReferencia": "70 a 99 mg/dL"
+      }
+    }
+  ]
+}

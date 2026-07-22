@@ -12,43 +12,47 @@
     "occurredAt",
     "documentId",
     "patientId",
-    "fileUrl"
+    "fileUrl",
+    "contentType"
   ],
   "properties": {
     "schemaVersion": {
-      "description": "Versão do contrato da mensagem.",
       "type": "integer",
       "const": 1
     },
     "eventType": {
-      "description": "Tipo lógico do evento.",
       "type": "string",
       "const": "DOCUMENT_PROCESSING_REQUESTED"
     },
     "eventId": {
-      "description": "Identificador único da solicitação e correlação das respostas.",
       "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "description": "Identificador único da solicitação."
     },
     "occurredAt": {
-      "description": "Momento em que o evento foi produzido, em UTC.",
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "pattern": "Z$",
+      "description": "Data e hora UTC em que a solicitação foi criada."
     },
     "documentId": {
-      "description": "Identificador do documento original.",
       "type": "string",
       "format": "uuid"
     },
     "patientId": {
-      "description": "Identificador do paciente proprietário do documento.",
       "type": "string",
       "format": "uuid"
     },
     "fileUrl": {
-      "description": "URL interna utilizada pelo processador para obter o arquivo.",
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "minLength": 1,
+      "description": "URL interna, sem credenciais, para leitura do arquivo."
+    },
+    "contentType": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
     }
   }
 }
