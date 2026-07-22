@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
   "eventType": "DOCUMENT_PROCESSING_REQUESTED",
-  "eventId": "a55c53fa-f3c4-4552-a98f-7d88d16f40e2",
-  "occurredAt": "2026-07-21T13:30:15.123Z",
-  "documentId": "60ebc948-f701-462f-bffd-9167eb77b193",
-  "patientId": "240e349a-e621-44d3-b569-870bf5825939",
-  "fileUrl": "https://patient-document-service:8443/documents/60ebc948-f701-462f-bffd-9167eb77b193/file"
+  "eventId": "8a73478e-af3c-451b-8107-601d7711a2d2",
+  "occurredAt": "2026-07-22T05:05:25.000Z",
+  "documentId": "a684eaab-abd3-42be-86cc-049792002577",
+  "patientId": "3d8d2a04-092b-455a-b824-bd2b5b968748",
+  "fileUrl": "https://patient-document-service:8443/documents/a684eaab-abd3-42be-86cc-049792002577/file",
+  "contentType": "image/png"
 }

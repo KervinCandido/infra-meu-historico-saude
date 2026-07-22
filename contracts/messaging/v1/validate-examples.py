@@ -1,89 +1,74 @@
+from __future__ import annotations
+
 import json
-import pathlib
-import sys
+from pathlib import Path
 
 from jsonschema import Draft7Validator, FormatChecker
 
 
-ROOT = pathlib.Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
 
-VALIDATIONS = [
+CASES = (
     (
         "schemas/document-processing-requested.schema.json",
         "examples/document-processing-requested.json",
     ),
     (
-        "schemas/document-processed-response.schema.json",
-        "examples/document-processed-success.json",
+        "schemas/document-processing-result.schema.json",
+        "examples/document-processing-completed.json",
     ),
     (
-        "schemas/document-processed-response.schema.json",
-        "examples/document-processed-failure.json",
+        "schemas/document-processing-result.schema.json",
+        "examples/document-processing-failed.json",
     ),
-]
+)
 
 
 def load_json(relative_path: str) -> dict:
     path = ROOT / relative_path
 
-    with path.open(
-        mode="r",
-        encoding="utf-8-sig",
-    ) as file:
+    with path.open(encoding="utf-8") as file:
         return json.load(file)
 
 
-def format_location(error) -> str:
-    if not error.absolute_path:
-        return "$"
+def validate_case(
+    schema_path: str,
+    example_path: str,
+) -> None:
+    schema = load_json(schema_path)
+    example = load_json(example_path)
 
-    return "$." + ".".join(
-        str(item)
-        for item in error.absolute_path
+    Draft7Validator.check_schema(schema)
+
+    validator = Draft7Validator(
+        schema,
+        format_checker=FormatChecker(),
     )
 
+    errors = sorted(
+        validator.iter_errors(example),
+        key=lambda error: list(error.absolute_path),
+    )
 
-def main() -> int:
-    valid = True
-
-    for schema_path, example_path in VALIDATIONS:
-        schema = load_json(schema_path)
-        example = load_json(example_path)
-
-        Draft7Validator.check_schema(schema)
-
-        validator = Draft7Validator(
-            schema,
-            format_checker=FormatChecker(),
+    if errors:
+        details = "\n".join(
+            f"- {list(error.absolute_path)}: {error.message}"
+            for error in errors
         )
 
-        errors = sorted(
-            validator.iter_errors(example),
-            key=lambda error: list(error.absolute_path),
+        raise SystemExit(
+            f"INVALID: {example_path}\n{details}"
         )
 
-        if not errors:
-            print(f"VALID: {example_path}")
-            continue
+    print(f"VALID: {example_path}")
 
-        valid = False
-        print(f"INVALID: {example_path}")
 
-        for error in errors:
-            print(
-                f"  {format_location(error)}: "
-                f"{error.message}"
-            )
+def main() -> None:
+    for schema_path, example_path in CASES:
+        validate_case(schema_path, example_path)
 
-    if valid:
-        print(
-            "OK: todos os exemplos respeitam "
-            "os respectivos contratos."
-        )
-        return 0
-
-    return 1
+    print("OK: todos os exemplos respeitam os contratos.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
