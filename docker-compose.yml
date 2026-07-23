@@ -340,6 +340,12 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
       - ./certs/patient-document:/app/certs:ro
+    healthcheck:
+      test: "wget --quiet --output-document=/dev/null http://127.0.0.1:8081/actuator/health || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       postgres-patient-document-service:
         condition: service_healthy
