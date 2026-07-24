@@ -322,6 +322,99 @@
             "description": "Obtém o token técnico do processador de IA. Esse cliente deve possuir somente documents:file:read e documents:ai-result:write. O token é salvo automaticamente em aiAccessToken."
           },
           "response": []
+        },
+        {
+          "name": "Obter token - paciente (Authorization Code + PKCE)",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "refreshRequestParams",
+                  "value": [],
+                  "type": "any"
+                },
+                {
+                  "key": "tokenRequestParams",
+                  "value": [],
+                  "type": "any"
+                },
+                {
+                  "key": "authRequestParams",
+                  "value": [],
+                  "type": "any"
+                },
+                {
+                  "key": "tokenName",
+                  "value": "Paciente Demo - PKCE",
+                  "type": "string"
+                },
+                {
+                  "key": "challengeAlgorithm",
+                  "value": "S256",
+                  "type": "string"
+                },
+                {
+                  "key": "scope",
+                  "value": "{{humanScope}}",
+                  "type": "string"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{oauthCallbackUrl}}",
+                  "type": "string"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "authorization_code_with_pkce",
+                  "type": "string"
+                },
+                {
+                  "key": "clientSecret",
+                  "value": "",
+                  "type": "string"
+                },
+                {
+                  "key": "clientId",
+                  "value": "{{patientPortalClientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "authUrl",
+                  "value": "{{humanAuthUrl}}",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                },
+                {
+                  "key": "client_authentication",
+                  "value": "body",
+                  "type": "string"
+                },
+                {
+                  "key": "accessTokenUrl",
+                  "value": "{{humanTokenUrl}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Fluxo humano de demonstração. Na aba Authorization, use Get New Access Token, autentique demo.patient, selecione Use Token e envie esta requisição para validar GET /patients."
+          },
+          "response": []
         }
       ],
       "description": "Obtém tokens pelo fluxo OAuth 2.0 client_credentials do Keycloak."
@@ -1790,6 +1883,10 @@
     ]
   },
   "variable": [
+    {
+      "key": "humanAccessToken",
+      "value": ""
+    },
     {
       "key": "accessToken",
       "value": ""

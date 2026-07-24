@@ -1,0 +1,4 @@
+services:
+  keycloak-service:
+    env_file:
+      - .env.demo.local

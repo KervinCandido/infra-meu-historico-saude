@@ -12,3 +12,7 @@ san_*.cnf
 # IntelliJ IDEA
 .idea/
 *.iml
+
+# Estado e segredos locais da demo
+.env.demo.local
+.demo-state.json
