@@ -11,7 +11,7 @@ services:
     url: https://patient-document-service:8443
     routes:
       - name: rota-patient-document
-        paths: [/patients, /documents]
+        paths: [/patients, /documents, /v3/api-docs, /swagger-ui]
         strip_path: false
 
 #upstreams:

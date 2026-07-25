@@ -182,6 +182,9 @@ services:
     image: quay.io/keycloak/keycloak:26.7.0
     container_name: keycloak-service
     restart: unless-stopped
+    env_file:
+      - path: ./.env.demo.local
+        required: false
     command:
       - start
       - --import-realm

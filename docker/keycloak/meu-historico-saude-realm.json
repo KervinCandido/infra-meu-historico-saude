@@ -459,6 +459,21 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "demo.doctor",
+      "email": "demo.doctor@meu-historico-saude.local",
+      "firstName": "Medico",
+      "lastName": "Demo",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_DOCTOR_PASSWORD}",
+          "temporary": false
+        }
+      ]
     }
   ]
 }
