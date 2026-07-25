@@ -1,4 +1,4 @@
-# infra-meu-historico-saude
+# Meu Histórico de Saúde
 
 Este repositório contém a infraestrutura e a definição dos serviços que compõem a solução **Meu Histórico de Saúde**. A arquitetura é baseada em microserviços, utilizando o **Kong Gateway** como ponto único de entrada, **Keycloak** para autenticação e autorização (IAM), **Apache Kafka** para mensageria/eventos, **Nextcloud** como provedor de armazenamento de arquivos e bancos de dados dedicados para cada componente.
 
