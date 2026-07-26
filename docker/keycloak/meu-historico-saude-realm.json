@@ -8,7 +8,7 @@
   "rememberMe": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "accessTokenLifespan": 300,
+  "accessTokenLifespan": 3600,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
 
