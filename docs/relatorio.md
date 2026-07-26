@@ -472,7 +472,7 @@ Limitações atuais:
 - IA sujeita a limitações do modelo e necessidade de revisão humana;
 - ausência de auditoria completa de cada leitura e download;
 - necessidade de gestão centralizada de segredos;
-- necessidade de criptografia em repouso e políticas formais de retenção;
+- necessidade de políticas formais de retenção;
 - necessidade de backup, recuperação de desastre e rotação de credenciais;
 - necessidade de antivírus, validação aprofundada de MIME e políticas adicionais de upload;
 - necessidade de métricas, tracing e alertas operacionais;
