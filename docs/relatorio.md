@@ -68,8 +68,8 @@ Com o Meu Histórico de Saúde, a paciente pode:
 2. permitir que o sistema organize seus metadados;
 3. consultar o registro em uma linha do tempo;
 4. conceder temporariamente acesso de leitura ao médico;
-5. impedir o download do arquivo original;
-6. revogar a autorização após o atendimento.
+5. permitir o download do arquivo original;
+6. revogar a autorização de consulta e download após o atendimento.
 
 A proposta não substitui sistemas oficiais de prontuário nem a avaliação clínica. Ela atua como uma camada de organização, portabilidade e compartilhamento controlado de documentos sob a perspectiva do paciente.
 
