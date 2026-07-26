@@ -137,9 +137,35 @@ if ($password.Length -lt 6) {
 
 Write-Step 'Localizando OpenSSL e keytool'
 
-$openssl = Resolve-Executable -Name 'openssl' -Candidates @(
-    "$env:ProgramFiles\Git\usr\bin\openssl.exe",
+$opensslCandidates = @(
+    "$env:ProgramFiles\Git\usr\bin\openssl.exe"
     "${env:ProgramFiles(x86)}\Git\usr\bin\openssl.exe"
+    "$env:LOCALAPPDATA\Programs\Git\usr\bin\openssl.exe"
+)
+
+$gitCommand =
+Get-Command `
+        -Name "git.exe" `
+        -ErrorAction SilentlyContinue
+
+if ($null -ne $gitCommand) {
+    $gitRoot =
+    Split-Path `
+            (Split-Path $gitCommand.Source -Parent) `
+            -Parent
+
+    $opensslCandidates +=
+    Join-Path `
+            $gitRoot `
+            "usr\bin\openssl.exe"
+}
+
+$openssl =
+Resolve-Executable `
+        -Name "openssl" `
+        -Candidates (
+$opensslCandidates |
+        Select-Object -Unique
 )
 
 $keytoolCandidates = @()
