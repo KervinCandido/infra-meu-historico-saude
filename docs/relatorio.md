@@ -1,5 +1,28 @@
+# Hackathon FIAP
+
+## Projeto
+
+**Hackathon FIAP**  
+**Curso:** Pós-Graduação em Arquitetura e Desenvolvimento em Java  
+**Serviços:** `infra-meu-historico-saude`, `med-text-analytics-processor` e `patient-document-service`  
+**Tema:** Cofre digital inteligente para a centralização e organização de documentos clínicos e históricos de saúde dos pacientes.
+
+## Equipe
+
+| Nome | RM | E-mail |
+|---|---:|---|
+| Alexandre Belisário Duarte Leite de Andrade | RM367163 | alexbdla@gmail.com |
+| Kervin Sama Candido da Silva | RM367345 | kervincandido@gmail.com |
+
+## Links do projeto
+
+| Item | Link |
+|---|---|
+| **[infra-meu-historico-saude](https://github.com/KervinCandido/infra-meu-historico-saude)** | https://github.com/KervinCandido/infra-meu-historico-saude |
+| **[med-text-analytics-processor](https://github.com/KervinCandido/med-text-analytics-processor)** | https://github.com/KervinCandido/med-text-analytics-processor |
+| **[patient-document-service](https://github.com/alex-dev-br/patient-document-service)** | https://github.com/alex-dev-br/patient-document-service |
+
 # Relatório do projeto
-Objetivo: documentar o processo de desenvolvimento e facilitar a avaliação detalhada.
 
 ## 1. Resumo executivo
 O Meu Histórico de Saúde consiste em um cofre digital inteligente voltado para a centralização e organização de documentos clínicos e históricos de saúde dos pacientes. A solução tem como objetivo permitir que o cidadão realize o envio de exames, laudos, receitas e outros registros, os quais são armazenados de forma segura e processados assincronamente por meio de inteligência artificial para a extração de dados estruturados. Esses dados alimentam uma linha do tempo organizada cronologicamente.
@@ -18,7 +41,7 @@ Os problemas específicos identificados na infraestrutura do SUS incluem:
 
 ## 3. Descrição da solução
 A solução propõe um cofre digital de saúde integrado a uma linha do tempo inteligente, organizada por especialidade médica, acessível pelo paciente e compartilhável de forma controlada com profissionais de saúde. O fluxo operacional do sistema compreende:
-1. Upload de documento de saúde bruto (exame, receita, laudo ou encaminhamento) pelo próprio paciente ou por um atendente assistido.
+1. Upload de documento de saúde bruto (exame, receita, laudo ou encaminhamento) pelo próprio paciente ou por um atendente assistido, no formato de PDF, JPG ou PNG.
 2. Processamento assíncrono por IA que classifica o arquivo e extrai metadados clínicos importantes (como tipo de documento, data, especialidade provável e resultados de exames), sem emitir diagnósticos.
 3. Organização e indexação das informações estruturadas no sistema.
 4. Visualização consolidada pelo paciente através de uma linha do tempo cronológica.
@@ -29,11 +52,19 @@ O modelo de custódia híbrida garante a inclusão de pessoas com baixa alfabeti
 
 ## 4. Processo de desenvolvimento
 O desenvolvimento da solução baseou-se em um plano estruturado de entregas incrementais divididas em etapas lógicas de execução técnica:
-- Modelagem de Integração e Processamento: Foco inicial na definição do contrato de resposta agregado do processador e na integração com a API de inteligência artificial de maneira assíncrona.
-- Persistência e Consumo de Mensageria: Implementação do consumo de eventos e garantia de idempotência no serviço de documentos do paciente, estruturando o banco de dados de destino e atualizando a linha do tempo.
-- Estabilização e Portabilidade: Ajustes finais de autenticação, geração do pacote de portabilidade de dados e preparação do ambiente de testes integrados.
 
-- TO DO: Detalhar o processo de brainstorming, etapas de design thinking e prototipação conduzidos pela equipe.
+- **Definição de Requisitos e Arquitetura**: Foco inicial na definição do escopo do projeto, arquitetura da solução, escolha das tecnologias e definição do formato das mensagens.
+- **Microsserviços**: Definição dos microsserviços que compõem a solução, separando-os em dois microserviços para facilitar o gerenciamento e escalabilidade, um para receber os arquivos e enviar para o processamento assíncrono e outro para processar os arquivos com integração com a IA do Google.
+- **Prototipação da integração com a LLM**: Prototipação da integração com a LLM (Gemini) com foco na experimentação de prompts e validação do fluxo de processamento de documentos.
+- **Definição de linguagem ubíqua e eventos de domínio**: Definição da linguagem ubíqua e dos eventos de domínio para facilitar a comunicação entre os microsserviços.
+- **Comunicação via Kafka**: Implementação da comunicação entre microserviços via Apache Kafka.
+- **Padrões Outbox/Inbox**: Implementação dos padrão de projeto Outbox e Inbox para garantir o envio e processamento de mensagens com alta confiabilidade.
+- **Resiliência**: Implementação de resiliência na integração com a LLM (Gemini), utilizando o `quarkus-smallrye-fault-tolerance` com estratégia de `Retry`, `Fallback`, `CircuitBreaker` e `Ratelimit`.
+- **Integração com Nextcloud**: Implementação da integração com o Nextcloud para o repositório seguro dos documentos originais enviados.
+- **Integração com Keycloak**: Implementação da integração com o Keycloak para autenticação e autorização via OpenID Connect.
+- **Integração com Kong Gateway**: Implementação da integração com o Kong Gateway para centralização do tráfego e roteamento seguro.
+- **Implementação do HTTPS/mTLS**: Implementação do HTTPS/mTLS para garantir a segurança da comunicação com o mundo exterior.
+- **Docker Compose**: Uso do Docker Compose para orquestração e gerenciamento dos containers.
 
 ## 5. Detalhes técnicos
 A arquitetura do sistema baseia-se em microserviços orientados a eventos, utilizando os seguintes componentes tecnológicos:
@@ -47,82 +78,25 @@ A arquitetura do sistema baseia-se em microserviços orientados a eventos, utili
 
 Abaixo consta o diagrama da arquitetura implementada:
 
-```mermaid
-flowchart TB
-    classDef client fill:#eceff1,stroke:#37474f,stroke-width:2px,color:#000000;
-    classDef gateway fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,stroke-dasharray: 5 5,color:#000000;
-    classDef service fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000000;
-    classDef database fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#000000;
-    classDef message fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000000;
-    classDef ext fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000000;
-    classDef dev fill:#f1f8e9,stroke:#689f38,stroke-width:2px,color:#000000;
-
-    Client["Cliente / Consumidor (HTTPS:8443)"]:::client
-    Gemini["Gemini API (Classificacao & Extracao)"]:::ext
-
-    subgraph GW ["Camada de API Gateway & Seguranca"]
-        Kong["Kong Gateway (kong-gateway)"]:::gateway
-        Keycloak["Keycloak (keycloak-service)"]:::service
-        DB_Keycloak[("Postgres Keycloak (postgres-keycloak)")]:::database
-    end
-
-    subgraph App ["Servicos da Aplicacao"]
-        PatientDoc["Patient Document Service (patient-document-service)"]:::service
-        MedText["Med Text Analytics Processor (med-text-analytics-processor)"]:::service
-    end
-
-    subgraph Storage ["Camada de Armazenamento & Dados"]
-        Nextcloud["Nextcloud (nextcloud)"]:::service
-        DB_Nextcloud[("Postgres Nextcloud (postgres-nextcloud)")]:::database
-        DB_PatientDoc[("Postgres Patient Doc (postgres-patient-document)")]:::database
-        DB_Mongo[("MongoDB Text Processor (mongo-text-processor)")]:::database
-    end
-
-    subgraph Messaging ["Camada de Mensageria (Event-Driven)"]
-        Kafka["Apache Kafka (apache-kafka-broker)"]:::message
-    end
-
-    subgraph Tools ["Ferramentas de Desenvolvimento"]
-        KafkaUI["Kafka UI (Port 8181)"]:::dev
-        MongoExpress["Mongo Express (Port 8081)"]:::dev
-    end
-
-    Client -->|HTTPS / mTLS| Kong
-    Kong -->|Roteamento / HTTPS| Keycloak
-    Kong -->|Roteamento / HTTPS| PatientDoc
-
-    Keycloak --> DB_Keycloak
-    PatientDoc -->|Validacao de Token / IAM| Keycloak
-
-    PatientDoc --> DB_PatientDoc
-    PatientDoc -->|Upload/Leitura de Arquivos| Nextcloud
-    PatientDoc -->|Publica Eventos| Kafka
-
-    Kafka -->|Consome Eventos| MedText
-    MedText --> DB_Mongo
-    MedText -->|Download de Arquivos| Nextcloud
-    MedText -->|Extracao de Texto| Gemini
-
-    Nextcloud --> DB_Nextcloud
-
-    KafkaUI -.->|Monitoramento| Kafka
-    MongoExpress -.->|Visualizacao| DB_Mongo
-```
+![Diagrama de Arquitetura](diagrama-arquitetura.jpg)
 
 ## 6. Links Úteis
-- TO DO: Inserir o link do repositorio de codigo do projeto (GitHub/GitLab).
-- [Narrativa e Escopo do MVP](file:///d:/workspace/fiap-hackathon-10ADJT/docs/mvp-hackathon-custodia-hibrida.md)
-- [Guia de Desenvolvimento Local](file:///d:/workspace/fiap-hackathon-10ADJT/docs/local-development.md)
+| Item | Link |
+|---|---|
+| **[infra-meu-historico-saude](https://github.com/KervinCandido/infra-meu-historico-saude)** | https://github.com/KervinCandido/infra-meu-historico-saude |
+| **[med-text-analytics-processor](https://github.com/KervinCandido/med-text-analytics-processor)** | https://github.com/KervinCandido/med-text-analytics-processor |
+| **[patient-document-service](https://github.com/alex-dev-br/patient-document-service)** | https://github.com/alex-dev-br/patient-document-service |
 
 ## 7. Aprendizados e próximos passos
 
 ### O que a equipe aprendeu com o projeto?
-- TO DO: Relatar as principais licoes aprendidas, desafios de integracao superados e competencias adquiridas durante o desenvolvimento da solucao.
+
+A equipe desenvolveu uma compreensão profunda sobre arquiteturas orientadas a eventos, padrões de design robustos como Outbox/Inbox, e a importância crítica da segurança em sistemas de saúde. A experiência prática na integração de tecnologias diversas, como Kafka, Keycloak, Kong Gateway e LLMs, demonstrou como compor soluções resilientes e escaláveis. Além disso, o projeto reforçou o valor da prototipação rápida para validar premissas técnicas e a necessidade de clareza nos requisitos para alinhar as expectativas entre diferentes perfis técnicos.
 
 ### O que pode ser aprimorado ou adicionado no futuro?
-- Integrar a solucao com a Rede Nacional de Dados em Saude (RNDS) e adotar o padrao de interoperabilidade FHIR (Fast Healthcare Interoperability Resources).
-- Implementar autenticacao centralizada via integracao oficial com a plataforma Gov.br.
-- Desenvolver conectores de armazenamento pessoal para provedores de nuvem privada (como Google Drive, Dropbox e OneDrive).
-- Habilitar o compartilhamento temporario de exames com profissionais de saude por meio de chaves temporarias ou codigos QR, com funcionalidade completa de revogacao de acesso.
-- Estruturar o cofre publico assistido para permitir a delegacao de acesso a representantes legais e suporte a prontuarios multiprofissionais integrados.
-- Calibrar o processador de analise de texto para classificar documentos por especialidade medica de forma automatica com indices de confianca definidos.
+
+- **Integração com RNDS e FHIR**: Expandir a interoperabilidade para incluir a Rede Nacional de Dados em Saúde (RNDS) e adotar o padrão FHIR para troca de informações.
+- **Autenticação Gov.br**: Implementar autenticação centralizada utilizando a plataforma Gov.br.
+- **Conectores de Armazenamento Pessoal**: Desenvolver integrações com serviços de nuvem como Google Drive, Dropbox e OneDrive.
+- **Compartilhamento Seguro de Exames**: Implementar funcionalidades de compartilhamento temporário via chaves ou QR codes, com revogação de acesso.
+- **Processador de Análise de Texto**: Calibrar a IA para classificação automática de documentos por especialidade médica com índices de confiança.
